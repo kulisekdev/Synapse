@@ -588,6 +588,24 @@ async def question(ctx, *, question: str):
     else:
         return await ctx.send("Please, ask.")
 
+@bot.tree.command(name="vcban", description="ban users from joining vc (admins)")
+async def vcban(i:discord.Interaction, user: discord.User = None):
+    if not user:
+        return i.response.send_message("Please specify a member!")
+
+    if not i.user.id == bot.owner_id:
+        return i.response.send_message("You don't have the permission to execute this command!")
+
+    user_entry = users.find_one({"_id": int(user.id)})
+    if not user_entry:
+        return i.response.send_message("The person isn't in my database.")
+
+    users.update_one(
+        {"_id": int(user.id)},
+        {"$set": {"canAccessVC": False}}
+    )
+    return i.response.send_message(f"Successfully restricted vc access for {i.user.name}!")
+    
 
 @bot.tree.command(name="purge", description="purge messages (for admins)")
 async def purge(i:discord.Interaction, amount: int):
