@@ -111,8 +111,12 @@ async def on_message(message: discord.Message):
             serverStats.update_one(
                 {"_id": serverStatsObjectID},
                 {"$inc": {"MaxMathStreak": CurrentNum}}
-                )
-
+            )
+    if "@everyone" in message.content:
+        if message.author.id == bot.owner_id:
+           return
+        await message.delete()
+        await message.channel.send(f"Please don't use the everyone mention even if its without a ping.")
 
 
 
@@ -203,9 +207,6 @@ async def on_message(message: discord.Message):
     if message.channel.id == 1512151683507945654:
         pass
 
-
-
-    await bot.handler.propagate(message)
     await bot.process_commands(message)
 
 
@@ -577,6 +578,16 @@ async def credits(i: discord.Interaction):
     credits_embed.set_footer(text=f"Requested by {i.user.display_name}", icon_url=i.user.display_avatar.url)
     
     await i.response.send_message(embed=credits_embed)
+
+@bot.command()
+async def question(ctx, *, question: str):
+    if question:
+        choices = ["Yes", "No", "Maybe", "Probably", "Maybe yes", "Maybe no"]
+        bot_choice = random.choice(choices)
+        return await ctx.send(bot_choice)
+    else:
+        return await ctx.send("Please, ask.")
+
 
 @bot.tree.command(name="purge", description="purge messages (for admins)")
 async def purge(i:discord.Interaction, amount: int):
