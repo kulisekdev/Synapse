@@ -41,8 +41,7 @@ async def on_voice_state_update(member: discord.Member, before: discord.VoiceSta
 
     if member.bot:
         return
-    print(UserDBEntry)
-    print(f"member: {member}, before: {before.channel}, after: {after.channel}")
+    
     if UserDBEntry:
         if not UserDBEntry["canAccessVC"]:
             await member.edit(voice_channel=None)
@@ -76,6 +75,8 @@ async def on_message(message: discord.Message):
     if message.author.bot:
         return
     HasResponded = False
+    if "musor" in message.content:
+        return await message.channel.send("https://c.tenor.com/dPIc4uRgPLcAAAAd/tenor.gif")
     if message.channel.id == 1512151683507945654:
         MaxMathStreak = serverStats.find_one({"_id": serverStatsObjectID})["MaxMathStreak"]
         try:
@@ -219,173 +220,7 @@ async def on_ready():
 
 
 
-@bot.tree.command(name="play", description="Play music")
-async def play(interaction:discord.Interaction, url: str = None):
-    
-    if BotConfig["testingmode"] is True:
-        if interaction.channel.id != 1457378020817113162:
-            await interaction.followup.send("bot is in testing mode, request access in <#1466807521741111297>")
-            return
-    
-    
-    #? if no url is specified kindly KINDLY ask the user to specify one
-    if not url:
-        return await interaction.response.send_message("Specify url!")
-    
-    bot_vc_client = interaction.guild.voice_client
 
-    if not interaction.user.voice:
-        return await interaction.response.send_message("you must be in a voice channel to use voice chat related commands!")
-    
-    if url.startswith("http://"):
-        return await interaction.response.send_message("Insecure sites aren't allowed! check your link and make sure it has https://")
-    if bot_vc_client:
-        isplaying = interaction.guild.voice_client.is_playing()
-            
-        if isplaying:
-            return await interaction.response.send_message("Synapse is already playing something.")
-        
-        if url.startswith("https://"):
-            if url.startswith("https://www.tiktok.com"):
-                await interaction.channel.send("TikTok links sometimes do work, but sometimes they don't. If it doesn't work, try using a YouTube link instead.")
-            opts = {
-                "outtmpl": "downloads/%(title)s.%(ext)s",
-                "format": "bestaudio/best",
-                "noplaylist": True,
-                "cookiefile": "cookies.txt",
-                "js_runtimes": {"node": {}},
-                "remote_components": "ejs:github",
-            }
-
-            await interaction.response.defer()
-            with yt_dlp.YoutubeDL(opts) as ydl:
-                Video_info = ydl.extract_info(url, download=False)
-                title = Video_info.get("title")
-                Uploader = Video_info.get("uploader")
-                duration = Video_info.get("duration")
-                duration_mins = duration // 60
-                filepath = ydl.prepare_filename(Video_info)
-                thumbnail = Video_info.get("thumbnail")
-                download_function = functools.partial(ydl.download, [url])
-                await asyncio.get_event_loop().run_in_executor(None, download_function)
-                formatted_duration = str(timedelta(seconds=duration))
-                embed = discord.Embed(
-                    title="🎶 Now Playing",
-                    description=f"[{title}]({url})",
-                    color=discord.Color.from_rgb(88, 101, 242) 
-                )
-                embed.set_thumbnail(url=thumbnail)
-                embed.add_field(name="👤 Uploader", value=f"`{Uploader}`", inline=True)
-                embed.add_field(name="⏱️ Duration", value=f"`{formatted_duration}`", inline=True)
-                embed.add_field(name="🙋 Requested By", value=interaction.user.mention, inline=True)
-                embed.set_footer(text="Music Bot System • 2026", icon_url=interaction.guild.icon.url if interaction.guild.icon else None)
-                await interaction.followup.send(embed=embed)
-                bot_vc_client.play(FFmpegPCMAudio(filepath))
-        else:
-            return await interaction.followup.send("The URL is invalid, Example of link: 'https://link.com/ID'")
-    else:
-        return await interaction.followup.send("the bot isn't in a voice channel")
-        
-
-
-
-
-
-@bot.tree.command(name="join", description="Join a channel")
-async def join(i: discord.Interaction):
-    if i.user.bot:
-        return
-    bot_vc_client = i.guild.voice_client
-    if not i.user.voice.channel:
-        return await i.response.send_message("in order to connect synapse to a channel you need to be in one too! without it Synapse won't know where to join!")
-    if bot_vc_client:
-        return await i.response.send_message("Synapse is already connected to a channel!")
-    
-    if i.user.voice.channel and not bot_vc_client:
-        bot_vc_client = await i.user.voice.channel.connect()
-        
-    return await i.response.send_message("connected successfully without issues")
-
-    
-
-        
-@bot.tree.command(name="pause", description="Pause currently playing music")
-async def pause(i: discord.Interaction):
-    if BotConfig["testingmode"] is True:
-        if i.channel.id != 1457378020817113162:
-            await i.response.send_message("bot is in testing mode, request access in <#1466807521741111297>")
-            return
-    if i.user.bot:
-        return
-    bot_vc_client = i.guild.voice_client
-    if i.user.voice.channel:
-        if bot_vc_client:   
-            if bot_vc_client.is_playing(): 
-                if bot_vc_client.is_paused():
-                    return await i.followup.send("Synapse is already paused so there isn't anything to pause or there isn't anything playing.")
-                bot_vc_client.pause()
-                return await i.response.send_message("Paused!")
-            else:
-                return await i.followup.send("Synapse isn't playing anything.")
-        else:
-            return await i.followup.send("Synapse isn't in a voice channel!")
-    return await i.followup.send("you must be in a voice channel to use voice chat related commands!")
-
-
-@bot.tree.command(name="resume", description="resume currently playing music")
-async def resume(i: discord.Interaction):
-    if BotConfig["testingmode"] is True:
-        if i.channel.id != 1457378020817113162:
-            await i.response.send_message("bot is in testing mode, request access in <#1466807521741111297>")
-            return
-    if i.user.bot:
-        return
-    bot_vc_client = i.guild.voice_client
-    if i.user.voice.channel:
-        if bot_vc_client:   
-            if not bot_vc_client.is_playing(): 
-                if not bot_vc_client.is_paused():
-                    return await i.followup.send("nothing to resume since there is not anything paused bruh nga.")
-                bot_vc_client.resume()
-                return await i.response.send_message("Resumed!")
-            else:
-                return await i.followup.send("Synapse isn't playing anything.")
-        else:
-            return await i.followup.send("Synapse isn't in a voice channel!")
-    else:
-        return await i.followup.send("you must be in a voice channel to use voice chat related commands!")
-
-
-
-
-@bot.tree.command(name="leave", description="leave the channel")
-async def leave(i: discord.Interaction):
-    bot_vc_client = i.guild.voice_client
-    
-
-    if i.user.voice.channel:
-        if bot_vc_client:   
-            await bot_vc_client.disconnect()
-            await i.followup.send("Successfully left without issues")
-        else:
-            return await i.followup.send("Synapse isn't in a voice channel!")
-    else:
-        return await i.followup.send("you must be in a voice channel to use voice chat related commands!")
-
-@bot.tree.command(name="stop", description="stop what's playing")
-async def stop(i: discord.Interaction):
-    bot_vc_client = i.guild.voice_client
-    
-    if i.user.bot:
-        return
-    if i.user.voice.channel:
-        if bot_vc_client:   
-            bot_vc_client.stop()
-            await i.response.send_message("stopped.")
-        else:
-            return await i.followup.send("Synapse isn't in a voice channel!")
-    else:
-        return await i.followup.send("you must be in a voice channel to use voice chat related commands!")
 
 
 @bot.event
@@ -523,61 +358,12 @@ async def levelleaderboard(i:discord.Interaction):
     await i.response.send_message(embed=levels_embed)
 
 @bot.tree.command(name="verify", description="verify yourself!")
-async def VerifyCMD(i: discord.Interaction, code: int = None):
+async def VerifyCMD(i: discord.Interaction):
     MemberRole = i.guild.get_role(1502276813089673466)
-    VerifyCode = int(random.randint(100000,999999))
     if MemberRole not in i.user.roles:
-        entry = verify.find_one({"_id": i.user.id})
-        if entry and code is not None:
-            if code == entry["VerifyCode"]:
-                if entry["hasVerified"]:
-                    guild : discord.Guild = bot.get_guild(1345844941397557270)
-                    verifiedrole : discord.Role = guild.get_role(1502276826947653632)
-                    member : discord.Member = await guild.fetch_member(entry["_id"])
-                    await member.add_roles(verifiedrole)
-                    verify.delete_one({"_id": entry["_id"]})
-                    return await i.response.send_message("Verification successful!", delete_after=20)
-        if entry:
-            return await i.user.send(f"Verification process is already in progress! if you lost the code, here it is. **{entry['VerifyCode']}**", delete_after=20)
-        
-        verify.insert_one(
-            {
-                "_id": i.user.id,
-                "username": str(i.user.name),
-                "hasVerified": False,
-                "VerifyCode": int(VerifyCode)
-            }
-        )
-        try:
-            await i.user.send(f"Your verification code is: **{VerifyCode}**, use /verify 123456 in <#1502388965259481088> (replace 123456 with the provided code.)")
-        except discord.Forbidden:
-            return await i.response.send_message("I couldn't send you a DM. Please make sure your DMs are open.", delete_after=20)
-    return await i.response.send_message(f"I have sent you a code into DM's. ", delete_after=20)
+        await i.user.add_roles(MemberRole)
+        await i.message.delete()
 
-
-        
-@bot.tree.command(name="credits", description="Giving credits where it's due.")
-async def credits(i: discord.Interaction):
-    credits_embed = discord.Embed(
-        title="✨ Project Credits",
-        description="Meet the team behind the development and creation of this project!",
-        color=0x5865F2
-    )
-    
-    credits_embed.add_field(
-        name="🤖 Bot Development", 
-        value="**Kulisek** (Server Owner)", 
-        inline=False
-    )
-    credits_embed.add_field(
-        name="🎨 Embed Design", 
-        value="**Gemini** (AI Assistant)", 
-        inline=False
-    )
-    
-    credits_embed.set_footer(text=f"Requested by {i.user.display_name}", icon_url=i.user.display_avatar.url)
-    
-    await i.response.send_message(embed=credits_embed)
 
 @bot.command()
 async def question(ctx, *, question: str):
@@ -591,21 +377,38 @@ async def question(ctx, *, question: str):
 @bot.tree.command(name="vcban", description="ban users from joining vc (admins)")
 async def vcban(i:discord.Interaction, user: discord.User = None):
     if not user:
-        return i.response.send_message("Please specify a member!")
+        return await i.response.send_message("Please specify a member!")
 
     if not i.user.id == bot.owner_id:
-        return i.response.send_message("You don't have the permission to execute this command!")
+        return await i.response.send_message("You don't have the permission to execute this command!")
 
     user_entry = users.find_one({"_id": int(user.id)})
     if not user_entry:
-        return i.response.send_message("The person isn't in my database.")
+        return await i.response.send_message("The person isn't in my database.")
 
     users.update_one(
         {"_id": int(user.id)},
         {"$set": {"canAccessVC": False}}
     )
-    return i.response.send_message(f"Successfully restricted vc access for {i.user.name}!")
-    
+    return await i.response.send_message(f"Successfully restricted vc access for {user.name}!")
+
+@bot.tree.command(name="revokevcban", description="revoke ban from vc (admins)")
+async def revokevcban(i:discord.Interaction, user: discord.User = None):
+    if not user:
+        return await i.response.send_message("Please specify a member!")
+
+    if not i.user.id == bot.owner_id:
+        return await i.response.send_message("You don't have the permission to execute this command!")
+
+    user_entry = users.find_one({"_id": int(user.id)})
+    if not user_entry:
+        return await i.response.send_message("The person isn't in my database.")
+
+    users.update_one(
+        {"_id": int(user.id)},
+        {"$set": {"canAccessVC": False}}
+    )
+    return await i.response.send_message(f"Successfully restricted vc access for {user.name}!")
 
 @bot.tree.command(name="purge", description="purge messages (for admins)")
 async def purge(i:discord.Interaction, amount: int):
@@ -614,6 +417,33 @@ async def purge(i:discord.Interaction, amount: int):
         await i.channel.send("Done!")
     else:
         await i.response.send_message("you lack permissions!")
+
+@bot.tree.command(name="spin", description="spin a virtual slot lmao why not XD XD ASDOHAHSJIKDAHGSJKDHLJASK")
+async def spin(i:discord.Interaction):
+    # 🍒 🍋 🍊 🍇 🍉 🔔 💎 7️⃣
+    fruitslist = ["cherry", "lemon", "orange", "grape", "melon", "bell", "diamond", "seven"]
+    fruitMultipliers = {
+        "cherry": {"multiplier": 2, "emoji": "🍒"},
+        "lemon": {"multiplier": 3, "emoji": "🍋"},
+        "orange": {"multiplier": 4, "emoji": "🍊"},
+        "grape": {"multiplier": 5, "emoji": "🍇"},
+        "melon": {"multiplier": 8, "emoji": "🍉"},
+        "bell": {"multiplier": 12, "emoji": "🔔"},
+        "diamond": {"multiplier": 25, "emoji": "💎"},
+        "seven": {"multiplier": 50, "emoji": "7️⃣"},
+    }
+    FSlot = random.choice(fruitslist)
+    SSlot = random.choice(fruitslist)
+    TSlot = random.choice(fruitslist)
+
+    if FSlot == SSlot == TSlot:
+        return await i.response.send_message(f"{fruitMultipliers[FSlot]['emoji']}-{fruitMultipliers[SSlot]['emoji']}-{fruitMultipliers[TSlot]['emoji']}  \n YOU WON {10 * fruitMultipliers[FSlot]['multiplier']} COINS!!!")
+    else:
+        return await i.response.send_message(f"{fruitMultipliers[FSlot]['emoji']}-{fruitMultipliers[SSlot]['emoji']}-{fruitMultipliers[TSlot]['emoji']} ,You lost :-(")
+
+
+#------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# CODE ENDS HERE!
 
 try:
     if BotConfig["testingmode"]:
@@ -626,9 +456,10 @@ try:
     if __name__ == "__main__":
         bot.run(token=os.getenv("tkn"), reconnect=BotConfig["Reconnect"])
 
-except Exception:
-    
 
+
+
+except Exception:
     WebhookData = {
         "content": f"Error while running bot. \n ```{traceback.format_exc()}```",
         "username":"Synapse Error Handler Webhook"
