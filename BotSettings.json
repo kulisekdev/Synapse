@@ -2,7 +2,7 @@
     "CommandPrefix": "!",
     "Reconnect": true,
     "OwnerID": 948646639961255936,
-    "testingmode": false,
+    "testingmode": true,
     "unwantedlinks": [
         "pornhub.com",
         "xvideos.com",

@@ -1,23 +1,15 @@
 from discord.ext import commands, tasks
-from discord import app_commands, FFmpegPCMAudio
+from discord import app_commands 
 import discord
-import yt_dlp
 import os
-import asyncio
 import traceback
 import json
 import requests
-from datetime import timedelta
-import time
-import threading
-import yt_dlp
-import pymongo
-import subprocess
 from pymongo import MongoClient
 from dotenv import load_dotenv
-import functools
 import random
 from bson.objectid import ObjectId
+from Functions.db import addXP
 load_dotenv()
 
 
@@ -59,60 +51,18 @@ async def on_voice_state_update(member: discord.Member, before: discord.VoiceSta
             },
         )
 
-
-CurrentNum = 0
-NextNum = 1
-LastUser = 0 
 HasResponded = False
 
 @bot.event
 async def on_message(message: discord.Message):
-    global CurrentNum
-    global NextNum
-    global LastUser
+
     global HasResponded
-    print(f"CurrentNum: {CurrentNum}, NextNum: {NextNum}, LastUser: {LastUser}")
     if message.author.bot:
         return
     HasResponded = False
     if "musor" in message.content:
         return await message.channel.send("https://c.tenor.com/dPIc4uRgPLcAAAAd/tenor.gif")
-    if message.channel.id == 1512151683507945654:
-        MaxMathStreak = serverStats.find_one({"_id": serverStatsObjectID})["MaxMathStreak"]
-        try:
-            message_content = int(message.content)
-        except ValueError:
-            message_content = None
 
-        print(message_content)
-        if message_content != NextNum and not HasResponded and isinstance(message_content, int):
-            NextNum = 1
-            CurrentNum = 0
-            await message.add_reaction("❌")
-            await message.channel.send(f"Lost the streak! current highest server streak: {MaxMathStreak} | the next number is {NextNum}")
-            HasResponded = True
-
-        
-        if message.author.id == LastUser and not HasResponded and isinstance(message_content, int):
-            NextNum = 1
-            CurrentNum = 0
-            LastUser = None
-            await message.channel.send("You can't count by yourself! Reseting..")
-            await message.add_reaction("❌")
-            HasResponded = True
-
-        if message_content == NextNum and not HasResponded and isinstance(message_content, int):
-            NextNum += 1
-            CurrentNum += 1
-            LastUser = message.author.id
-            await message.add_reaction("✅")
-            HasResponded = True
-
-        if MaxMathStreak <= CurrentNum:
-            serverStats.update_one(
-                {"_id": serverStatsObjectID},
-                {"$inc": {"MaxMathStreak": CurrentNum}}
-            )
     if "@everyone" in message.content:
         if message.author.id == bot.owner_id:
            return
