@@ -103,7 +103,7 @@ async def on_message(message: discord.Message):
                 _id=userID,
                 operation="add",
                 var_name="xp",
-                value="xd"
+                value=10
             )
             if result["error"]:
                 await sendErr(result["msg"])
@@ -123,7 +123,6 @@ async def on_ready():
 
 @bot.event
 async def on_member_join(member:discord.Member):
-    zerorole = member.guild.get_role(1502276826947653632)
     join_embed = discord.Embed(
         title="👋 New Member Joined",
         description=f"Welcome to the server, {member.mention}!",
@@ -157,6 +156,9 @@ async def on_member_join(member:discord.Member):
     )
     join_channel = bot.get_channel(1352971409588224030)
     await join_channel.send(embed=join_embed)
+    result = AddUser(member.id, member.name)
+    if result["error"]:
+        sendErr(result["message"])
     try:
         await member.send(f"Welcome to the server, {member.mention}! Please make sure to read the rules and enjoy your stay! \n\n If you want to verify yourself, use /verify in <#1502388965259481088> to get access to the rest of the server!")
     except discord.Forbidden:
@@ -194,6 +196,9 @@ async def on_member_remove(member:discord.Member):
     leave_embed.set_footer(
         text=f"ID: {member.id} • Made by Synapse"
     )
+    result = DelUser(member.id)
+    if result["error"]:
+        sendErr(result["msg"])
     join_channel = bot.get_channel(1352971409588224030)
     await join_channel.send(embed=leave_embed)
 
@@ -204,10 +209,10 @@ async def level(i:discord.Interaction, user: discord.Member = None):
     if user is None:
         user = i.user
 
-    UserName = user.name
     UserID = user.id
     userEntry = UsersCollection.find_one({"_id": UserID})
-    
+    if not userEntry:
+        return await i.response.send_message("User isn't in my database yet.")
     embed_color = user.color if hasattr(user, "color") else discord.Color.blue()
 
     final_embed = discord.Embed(
@@ -240,9 +245,9 @@ async def levelleaderboard(i:discord.Interaction):
     sorted_levels = UsersCollection.find().sort("level", -1).to_list()
     
     levels_embed = discord.Embed(
-        title="levels Leaderboard",
-        description=f"This shows a leaderboard on this server \n the top level currently is <@{sorted_levels[0]['_id']}>",
-        color=discord.Color.red(),
+        title="🏆 Level Leaderboard",
+        description=f"Top player: <@{sorted_levels[0]['_id']}>\n\n**Top 5 players by level**",
+        color=discord.Color.gold(),
         timestamp=discord.utils.utcnow(),
     )
     
@@ -250,8 +255,14 @@ async def levelleaderboard(i:discord.Interaction):
     for _ in sorted_levels:
         if index >= 5:
             break
-        levels_embed.add_field(name=f"{_['username']}", value=f"{_['level']}", inline=False)
+        levels_embed.add_field(
+            name=f"#{index + 1} · { _['username'] }",
+            value=f"**Level { _['level'] }**",
+            inline=False,
+        )
         index += 1
+
+    levels_embed.set_footer(text=f"Showing {min(len(sorted_levels), 5)} players")
         
     await i.response.send_message(embed=levels_embed)
 
@@ -272,41 +283,6 @@ async def question(ctx, *, question: str):
     else:
         return await ctx.send("Please, ask.")
 
-@bot.tree.command(name="vcban", description="ban users from joining vc (admins)")
-async def vcban(i:discord.Interaction, user: discord.User = None):
-    if not user:
-        return await i.response.send_message("Please specify a member!")
-
-    if not i.user.id == bot.owner_id:
-        return await i.response.send_message("You don't have the permission to execute this command!")
-
-    user_entry = UsersCollection.find_one({"_id": int(user.id)})
-    if not user_entry:
-        return await i.response.send_message("The person isn't in my database.")
-
-    UsersCollection.update_one(
-        {"_id": int(user.id)},
-        {"$set": {"canAccessVC": False}}
-    )
-    return await i.response.send_message(f"Successfully restricted vc access for {user.name}!")
-
-@bot.tree.command(name="revokevcban", description="revoke ban from vc (admins)")
-async def revokevcban(i:discord.Interaction, user: discord.User = None):
-    if not user:
-        return await i.response.send_message("Please specify a member!")
-
-    if not i.user.id == bot.owner_id:
-        return await i.response.send_message("You don't have the permission to execute this command!")
-
-    user_entry = UsersCollection.find_one({"_id": int(user.id)})
-    if not user_entry:
-        return await i.response.send_message("The person isn't in my database.")
-
-    UsersCollection.update_one(
-        {"_id": int(user.id)},
-        {"$set": {"canAccessVC": False}}
-    )
-    return await i.response.send_message(f"Successfully restricted vc access for {user.name}!")
 
 @bot.tree.command(name="purge", description="purge messages (for admins)")
 async def purge(i:discord.Interaction, amount: int):
@@ -316,29 +292,6 @@ async def purge(i:discord.Interaction, amount: int):
     else:
         await i.response.send_message("you lack permissions!")
 
-@bot.tree.command(name="spin", description="spin a virtual slot lmao why not XD XD ASDOHAHSJIKDAHGSJKDHLJASK")
-async def spin(i:discord.Interaction):
-    # 🍒 🍋 🍊 🍇 🍉 🔔 💎 7️⃣
-    fruitslist = ["cherry", "lemon", "orange", "grape", "melon", "bell", "diamond", "seven"]
-    fruitMultipliers = {
-        "cherry": {"multiplier": 2, "emoji": "🍒"},
-        "lemon": {"multiplier": 3, "emoji": "🍋"},
-        "orange": {"multiplier": 4, "emoji": "🍊"},
-        "grape": {"multiplier": 5, "emoji": "🍇"},
-        "melon": {"multiplier": 8, "emoji": "🍉"},
-        "bell": {"multiplier": 12, "emoji": "🔔"},
-        "diamond": {"multiplier": 25, "emoji": "💎"},
-        "seven": {"multiplier": 50, "emoji": "7️⃣"},
-    }
-    FSlot = random.choice(fruitslist)
-    SSlot = random.choice(fruitslist)
-    TSlot = random.choice(fruitslist)
-
-    if FSlot == SSlot == TSlot:
-        return await i.response.send_message(f"{fruitMultipliers[FSlot]['emoji']}-{fruitMultipliers[SSlot]['emoji']}-{fruitMultipliers[TSlot]['emoji']}  \n YOU WON {10 * fruitMultipliers[FSlot]['multiplier']} COINS!!!")
-    else:
-        return await i.response.send_message(f"{fruitMultipliers[FSlot]['emoji']}-{fruitMultipliers[SSlot]['emoji']}-{fruitMultipliers[TSlot]['emoji']} ,You lost :-(")
-        
 @bot.command()
 async def flashdance(ctx: Context):
     if not ctx.author.voice:

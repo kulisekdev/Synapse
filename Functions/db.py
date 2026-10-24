@@ -96,9 +96,3 @@ def DelUser(userID: int,):
             return {"error": True, "msg": f"{str(exc)}"}
     else:
         return {"error": True, "msg": "user is not in my database."}
-
-def GetUser(userID: int):
-    try:
-        return UsersDB.find_one({"_id": userID})
-    except Exception as exc:
-        return {"error": False, "msg":f"{str(exc)}"}
