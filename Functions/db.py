@@ -4,6 +4,7 @@ from pymongo.collection import Collection
 import pymongo
 from os import getenv
 from dotenv import load_dotenv
+from typing import Literal
 import traceback
 load_dotenv()
 
@@ -11,7 +12,7 @@ DB_Client = MongoClient(getenv("mongodb"))
 SynapseDB = DB_Client["Synapse"]
 UsersDB = SynapseDB["users"]
 
-def updateVar(collection: Collection, _id: int, operation: str, var_name: str, value):
+def updateVar(collection: Collection, _id: int, operation: Literal["set", "add", "ded"], var_name: str, value):
     """
     Updates a user and its variable with new value \n
     collection: Collection (MongoDB Collection) | Collection definition \n
@@ -23,13 +24,18 @@ def updateVar(collection: Collection, _id: int, operation: str, var_name: str, v
     """
     User = collection.find_one({"_id": _id})
     MongoDB_Operator = str()
+    if (operation == "add" or operation == "ded") and not isinstance(value, int):
+        return {"error": True, "msg": f"the {operation} operation can't be used on {type(value).__name__}"} 
+    if operation == "set" and value == None:
+        return {"error": True, "msg": f"the value is none"}
+
     if operation == "set":
         MongoDB_Operator = "$set"
     elif operation == "add":
         MongoDB_Operator = "$inc"
     elif operation == "ded":
         MongoDB_Operator = "$inc"
-        value = -value
+        value = -abs(value)
         if User: 
             if type(value) == type(collection.find_one({"_id": _id})):
                 try:

@@ -16,12 +16,9 @@ from discord.ext.commands import Context
 load_dotenv()
 
 
-Client = MongoClient(os.getenv("mongodb"), serverSelectionTimeoutMS=500)
-collection = Client["Synapse"]
-users = collection["users"]
-verify = collection["ToVerify"]
-serverStats = collection["serverStats"]
-serverStatsObjectID = ObjectId("6a2524a7f207d7e2755a85b5")
+DBClient = MongoClient(os.getenv("mongodb"), serverSelectionTimeoutMS=500)
+SynapseCollections = DBClient["Synapse"]
+UsersCollection = SynapseCollections["users"]
 
 #? load bot config
 with open("BotSettings.json", "r") as SettingsFile:
@@ -30,15 +27,14 @@ with open("BotSettings.json", "r") as SettingsFile:
 
 bot = commands.Bot(command_prefix="!", intents=discord.Intents.all(), description="idk", owner_id=948646639961255936)
 
-HasResponded = False
+
 
 @bot.event
 async def on_message(message: discord.Message):
 
-    global HasResponded
     if message.author.bot:
         return
-    HasResponded = False
+
     if "musor" in message.content:
         return await message.channel.send("https://c.tenor.com/dPIc4uRgPLcAAAAd/tenor.gif")
 
@@ -51,7 +47,7 @@ async def on_message(message: discord.Message):
 
     
     userID = int(message.author.id)
-    user = users.find_one({"_id": userID})
+    user = UsersCollection.find_one({"_id": userID})
 
 
     for unwantedlink in BotConfig["unwantedlinks"]:
@@ -85,7 +81,7 @@ async def on_message(message: discord.Message):
         if user["xp"] > 200:
             levelup_embed = discord.Embed(
                 title="**Level UP!**",
-                description=f"{message.author.mention}, has leveled up to level {users.find_one({'_id': message.author.id})['level']}",
+                description=f"{message.author.mention}, has leveled up to level {UsersCollection.find_one({'_id': message.author.id})['level']}",
                 color=discord.Color.green(),
                 timestamp=discord.utils.utcnow()
             )
@@ -101,6 +97,16 @@ async def on_message(message: discord.Message):
             )
             await bot.get_channel(1562077347337998416).send(embed=levelup_embed)
 
+        if user["CanReceiveXP"]:
+            result = updateVar(
+                collection=UsersCollection,
+                _id=userID,
+                operation="add",
+                var_name="xp",
+                value="xd"
+            )
+            if result["error"]:
+                await sendErr(result["msg"])
 
     await bot.process_commands(message)
 
@@ -111,8 +117,6 @@ async def on_ready():
     await bot.tree.sync()
     await bot.change_presence(status=discord.Status.online, activity=discord.Game("Developed by Kulisek!"))
     print("Bot is ready!")
-
-
 
 
 
@@ -202,7 +206,7 @@ async def level(i:discord.Interaction, user: discord.Member = None):
 
     UserName = user.name
     UserID = user.id
-    userEntry = users.find_one({"_id": UserID})
+    userEntry = UsersCollection.find_one({"_id": UserID})
     
     embed_color = user.color if hasattr(user, "color") else discord.Color.blue()
 
@@ -233,7 +237,7 @@ async def level(i:discord.Interaction, user: discord.Member = None):
 
 @bot.tree.command(name="levelleaderboard", description="displays a level leaderboard")
 async def levelleaderboard(i:discord.Interaction):
-    sorted_levels = users.find().sort("level", -1).to_list()
+    sorted_levels = UsersCollection.find().sort("level", -1).to_list()
     
     levels_embed = discord.Embed(
         title="levels Leaderboard",
@@ -276,11 +280,11 @@ async def vcban(i:discord.Interaction, user: discord.User = None):
     if not i.user.id == bot.owner_id:
         return await i.response.send_message("You don't have the permission to execute this command!")
 
-    user_entry = users.find_one({"_id": int(user.id)})
+    user_entry = UsersCollection.find_one({"_id": int(user.id)})
     if not user_entry:
         return await i.response.send_message("The person isn't in my database.")
 
-    users.update_one(
+    UsersCollection.update_one(
         {"_id": int(user.id)},
         {"$set": {"canAccessVC": False}}
     )
@@ -294,11 +298,11 @@ async def revokevcban(i:discord.Interaction, user: discord.User = None):
     if not i.user.id == bot.owner_id:
         return await i.response.send_message("You don't have the permission to execute this command!")
 
-    user_entry = users.find_one({"_id": int(user.id)})
+    user_entry = UsersCollection.find_one({"_id": int(user.id)})
     if not user_entry:
         return await i.response.send_message("The person isn't in my database.")
 
-    users.update_one(
+    UsersCollection.update_one(
         {"_id": int(user.id)},
         {"$set": {"canAccessVC": False}}
     )
@@ -344,7 +348,18 @@ async def flashdance(ctx: Context):
     await sleep(9)
     await ctx.voice_client.disconnect()
 
-        
+async def sendErr(message: str = None):
+    guild_id = 1345844941397557270
+    err_embed = discord.Embed(
+        title="⚠️ Error",
+        description=(f"**{message}**"),
+        color=discord.Color.red(),
+        timestamp=discord.utils.utcnow(),
+    )
+    err_embed.set_footer(text="Error report")
+    await bot.get_guild(guild_id).get_channel(1352971422410084382).send(embed=err_embed)
+
+
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # CODE ENDS HERE!
 
