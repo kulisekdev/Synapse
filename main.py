@@ -1,15 +1,18 @@
 from discord.ext import commands, tasks
-from discord import app_commands 
+from discord import app_commands, FFmpegPCMAudio
 import discord
 import os
 import traceback
 import json
 import requests
+import time
 from pymongo import MongoClient
 from dotenv import load_dotenv
 import random
+from asyncio import sleep
 from bson.objectid import ObjectId
-from Functions.db import addXP
+from Functions.db import updateVar, AddUser, DelUser
+from discord.ext.commands import Context
 load_dotenv()
 
 
@@ -27,30 +30,6 @@ with open("BotSettings.json", "r") as SettingsFile:
 
 bot = commands.Bot(command_prefix="!", intents=discord.Intents.all(), description="idk", owner_id=948646639961255936)
 
-@bot.event
-async def on_voice_state_update(member: discord.Member, before: discord.VoiceState, after:discord.VoiceState):
-    UserDBEntry = users.find_one({"_id": int(member.id)})
-
-    if member.bot:
-        return
-    
-    if UserDBEntry:
-        if not UserDBEntry["canAccessVC"]:
-            await member.edit(voice_channel=None)
-            await member.send("Due to your suspension of using voice chat in my server, you cannot access voice chats. contact <@948646639961255936> if you think this is unusual and you didn't do anything.")
-    else:
-        users.insert_one(
-            {
-                "_id": int(member.id),
-                "level": 1,
-                "username": member.name,
-                "xp": 0,
-                "CanReceiveXP": True,
-                "warnings": 0,
-                "canAccessVC": True
-            },
-        )
-
 HasResponded = False
 
 @bot.event
@@ -66,16 +45,13 @@ async def on_message(message: discord.Message):
     if "@everyone" in message.content:
         if message.author.id == bot.owner_id:
            return
+        await message.channel.send(f"{message.author.mention}, please don't use the everyone mention.", delete_after=5)
         await message.delete()
-        await message.channel.send(f"Please don't use the everyone mention even if its without a ping.")
-
-
+        
 
     
     userID = int(message.author.id)
-    username = str(message.author.name)
     user = users.find_one({"_id": userID})
-
 
 
     for unwantedlink in BotConfig["unwantedlinks"]:
@@ -83,80 +59,48 @@ async def on_message(message: discord.Message):
             await message.delete()
             break
 
-    hasGivenXP = False
-    if user is None and not hasGivenXP:
-        users.update_one(
-            {"_id": userID},
-            {
-                "$set": {
-                    "level": 1,
-                    "username": username,
-                    "CanReceiveXP": True,
-                    "warnings": 0,
-                    "canAccessVC": True,
-                    "AcceptedGifTerms": False
-                },
-                "$inc": {"xp": 5}
-            },
-            upsert=True
-        )
-        hasGivenXP = True
-    
-    if not hasGivenXP and user["CanReceiveXP"]:
-        print("giving xp..")
-        users.update_one({"_id": userID},{"$inc": {"xp": 5}})
-        hasGivenXP = True
 
-    tenrole = message.guild.get_role(1502276813089673466)  
-    twentyrole = message.guild.get_role(1502276809981431888)
-    thirtyrole = message.guild.get_role(1502276809075462174)
-    fourtyrole = message.guild.get_role(1502276806563070012)
-    fiftyrole = message.guild.get_role(1502276803840970832)
+    level_roles = {
+        "ten": {"id": 1502276813089673466, "lvl": 10},
+        "twenty": {"id": 1502276813089673466, "lvl": 20},
+        "thirty": {"id": 1502276813089673466, "lvl": 30},
+        "fourty": {"id": 1502276813089673466, "lvl": 40},
+        "fifty": {"id": 1502276813089673466, "lvl": 50},
+    }
 
-    if user["level"] >= 9 and tenrole not in message.author.roles:
-        await message.author.send("You've been awarded with role 'Rookie', Congrats! 🎉")
-        await message.author.add_roles(tenrole)
-    if user["level"] >= 19 and twentyrole not in message.author.roles:
-        await message.author.send("You've been awarded with role 'Apprentice', Congrats! 🎉")
-        await message.author.add_roles(twentyrole)
-    if user["level"] >= 29 and thirtyrole not in message.author.roles:
-        await message.author.send("You've been awarded with role 'Expert', Congrats! 🎉")
-        await message.author.add_roles(thirtyrole)
-    if user["level"] >= 39 and fourtyrole not in message.author.roles:
-        await message.author.send("You've been awarded with role 'Veteran', Congrats! 🎉")
-        await message.author.add_roles(fourtyrole)
-    if user["level"] >= 49 and fiftyrole not in message.author.roles:
-        await message.author.send("You've been awarded with role 'Ancient', Congrats! 🎉")
-        await message.author.add_roles(fiftyrole)
-    
-    if users.find_one({"_id": message.author.id})["xp"] >= 200:
-        users.update_one(
-            {"_id": message.author.id},
-            {
-                "$inc": {"level": 1},
-                "$set": {"xp": 0},
-            },
-        )
-        levelup_embed = discord.Embed(
-            title="**Level UP!**",
-            description=f"{message.author.mention}, has leveled up to level {users.find_one({'_id': message.author.id})['level']}",
-            color=discord.Color.green(),
-            timestamp=discord.utils.utcnow()
-        )
-        levelup_embed.set_author(
-            name="Synapse", 
-            icon_url=bot.user.avatar.url
-        )
-        levelup_embed.set_footer(
-            text=f"level up embed, made by Synapse and its dev 'Kulisekxd'"
-        )
-        levelup_embed.set_thumbnail(
-            url=message.author.avatar.url
-        )
-        await bot.get_channel(1352971415397072988).send(embed=levelup_embed)
+    roles = []
+    for role in message.author.roles:
+        roles.append(role.id)
 
-    if message.channel.id == 1512151683507945654:
-        pass
+
+    for role in level_roles.values():
+
+        if role["id"] in roles:
+            continue
+
+        if user["xp"] > role["lvl"]:
+            await message.author.add_roles(message.guild.get_role(role["id"]))
+
+    if user:
+        if user["xp"] > 200:
+            levelup_embed = discord.Embed(
+                title="**Level UP!**",
+                description=f"{message.author.mention}, has leveled up to level {users.find_one({'_id': message.author.id})['level']}",
+                color=discord.Color.green(),
+                timestamp=discord.utils.utcnow()
+            )
+            levelup_embed.set_author(
+                name="Synapse", 
+                icon_url=bot.user.avatar.url
+            )
+            levelup_embed.set_footer(
+                text=f"level up embed, made by Synapse and its dev 'Kulisekxd'"
+            )
+            levelup_embed.set_thumbnail(
+                url=message.author.avatar.url
+            )
+            await bot.get_channel(1562077347337998416).send(embed=levelup_embed)
+
 
     await bot.process_commands(message)
 
@@ -390,8 +334,17 @@ async def spin(i:discord.Interaction):
         return await i.response.send_message(f"{fruitMultipliers[FSlot]['emoji']}-{fruitMultipliers[SSlot]['emoji']}-{fruitMultipliers[TSlot]['emoji']}  \n YOU WON {10 * fruitMultipliers[FSlot]['multiplier']} COINS!!!")
     else:
         return await i.response.send_message(f"{fruitMultipliers[FSlot]['emoji']}-{fruitMultipliers[SSlot]['emoji']}-{fruitMultipliers[TSlot]['emoji']} ,You lost :-(")
+        
+@bot.command()
+async def flashdance(ctx: Context):
+    if not ctx.author.voice:
+        return await ctx.reply("You have to be in a voice channel!")
+    vc = await ctx.author.voice.channel.connect()
+    vc.play(FFmpegPCMAudio("flashbangdance.mp3"))
+    await sleep(9)
+    await ctx.voice_client.disconnect()
 
-
+        
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # CODE ENDS HERE!
 

@@ -11,42 +11,43 @@ DB_Client = MongoClient(getenv("mongodb"))
 SynapseDB = DB_Client["Synapse"]
 UsersDB = SynapseDB["users"]
 
-def updateVar(collection: Collection,userID: int, operation: str, var_name: str, new_value: str):
+def updateVar(collection: Collection, _id: int, operation: str, var_name: str, value):
     """
-    Adds XP to the user in my MongoDB Database.
-
-    Variables: \n
+    Updates a user and its variable with new value \n
+    collection: Collection (MongoDB Collection) | Collection definition \n
     userID: integer | user identification, discord user ID. \n
-    amount: integer | amount of XP to add.
+    operation: str (set, add, ded) (set, add, deduct) | type of oepration in database. \n
+    var_name: str | variable name inside the document of the user in database. \n
+    value: str | new value for variable var_name inside the database. \n
 
     """
-    User = collection.find_one({"_id": userID})
+    User = collection.find_one({"_id": _id})
     MongoDB_Operator = str()
     if operation == "set":
-        MongoDB_Operator == "$set"
+        MongoDB_Operator = "$set"
     elif operation == "add":
-        MongoDB_Operator == "$inc"
+        MongoDB_Operator = "$inc"
     elif operation == "ded":
-        MongoDB_Operator == "$inc"
-        new_value = -new_value
-
-    if User:
-        if isinstance(User["xp"], int):
-            try:
-                UsersDB.update_one(
-                    {"_id": userID},
-                    {f"${MongoDB_Operator}": {
-                        var_name: new_value
+        MongoDB_Operator = "$inc"
+        value = -value
+        if User: 
+            if type(value) == type(collection.find_one({"_id": _id})):
+                try:
+                    print(MongoDB_Operator)
+                    UsersDB.update_one(
+                        {"_id": _id},
+                        {MongoDB_Operator: {
+                            var_name: value
+                            }
                         }
-                    }
-                )
-                return {"error": False, "msg": "Success!"}
-            except PyMongoError as exc:
-                return {"error": True, "msg": f"{str(exc)}"}
+                    )
+                    return {"error": False, "msg": "Success!"}
+                except PyMongoError as exc:
+                    return {"error": True, "msg": f"{str(exc)}"}
+            else:
+                return {"error": True, "msg": f"variable xp is {type(User['xp'])}, supposed to be int"}
         else:
-            return {"error": True, "msg": f"variable xp is {type(User["xp"])}, supposed to be int"}
-    else:
-        return {"error": True, "msg": f"<@{userID}> isn't in my database yet."}
+            return {"error": True, "msg": f"isn't in database."}
 
 def AddUser(userID: int,username: str):
     """
@@ -89,3 +90,9 @@ def DelUser(userID: int,):
             return {"error": True, "msg": f"{str(exc)}"}
     else:
         return {"error": True, "msg": "user is not in my database."}
+
+def GetUser(userID: int):
+    try:
+        return UsersDB.find_one({"_id": userID})
+    except Exception as exc:
+        return {"error": False, "msg":f"{str(exc)}"}
