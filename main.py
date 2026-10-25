@@ -24,7 +24,7 @@ UsersCollection = SynapseCollections["users"]
 #? load bot configuration
 configuration = get_config("config.toml")
 
-if configuration["error"]:
+if configuration.get("error") is True:
     WebhookData = {
         "content": f"Error while running bot. \n ```{configuration['msg']}```",
         "username":"Synapse Error Handler Webhook"
