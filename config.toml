@@ -1,0 +1,46 @@
+
+# Synapse bot configuration
+
+# Prefix used for prefix commands.
+[general]
+cmd_prefix = "!"
+
+# Discord user ID of the bot owner.
+owner_id = 948646639961255936
+
+# Select which bot token to use from .env.
+# true  = testing token (uses testing var from .env)
+# false = production token (uses tkn var from .env)
+testing_mode = false
+
+# Text patterns blocked by the link filter.
+# Messages containing any of these strings may be removed.
+# Entries can be domain names, URLs, or other text patterns.
+unwanted_links = [
+  "pornhub.com",
+  "xvideos.com",
+  "xnnx.com",
+  "hentaicity.com",
+  "rule34.xxx",
+  "rule34videos.com",
+]
+
+# allow users to utilize @everyone mention? default: false
+allow_everyone_mention = false
+# ------------------------------------------------------------------------------------------------------------------------------
+[channels]
+# channel ID's 
+
+# level up channel ID, can be a bot log channel or any channel of choice. must be a number
+level_up_channel = 1562077347337998416
+
+# error channel ID, bot will send exceptions and errors when they happen, you can report them at the github repo at issues.
+error_channel = 1352971422410084382
+
+# join/leave channel ID, bot will send a message here when a member leaves/joins
+join_channel = 1352971409588224030
+leave_channel = 1352971409588224030
+
+# moderation channel ID, bot will send a log here when moderation happens such as ->
+# bans, message deletions
+moderation_channel = 1563897104450191430

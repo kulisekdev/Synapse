@@ -10,8 +10,9 @@ from pymongo import MongoClient
 from dotenv import load_dotenv
 import random
 from asyncio import sleep
-from bson.objectid import ObjectId
+from dataclasses import dataclass
 from Functions.db import updateVar, AddUser, DelUser
+from Functions.config import set_config, get_config
 from discord.ext.commands import Context
 load_dotenv()
 
@@ -20,14 +21,17 @@ DBClient = MongoClient(os.getenv("mongodb"), serverSelectionTimeoutMS=500)
 SynapseCollections = DBClient["Synapse"]
 UsersCollection = SynapseCollections["users"]
 
-#? load bot config
-with open("BotSettings.json", "r") as SettingsFile:
-    BotConfig = json.load(SettingsFile)
+#? load bot configuration
+configuration = get_config("config.toml")
+general_configuration = configuration["general"]
+channel_id_configuration = configuration["channels"]
 
-
-bot = commands.Bot(command_prefix="!", intents=discord.Intents.all(), description="idk", owner_id=948646639961255936)
-
-
+bot = commands.Bot(
+    command_prefix="!",
+    intents=discord.Intents.all(), 
+    description="idk", 
+    owner_id=948646639961255936
+)
 
 @bot.event
 async def on_message(message: discord.Message):
@@ -38,7 +42,7 @@ async def on_message(message: discord.Message):
     if "musor" in message.content:
         return await message.channel.send("https://c.tenor.com/dPIc4uRgPLcAAAAd/tenor.gif")
 
-    if "@everyone" in message.content:
+    if "@everyone" in message.content and not general_configuration["allow_everyone_mention"]:
         if message.author.id == bot.owner_id:
            return
         await message.channel.send(f"{message.author.mention}, please don't use the everyone mention.", delete_after=5)
@@ -50,7 +54,7 @@ async def on_message(message: discord.Message):
     user = UsersCollection.find_one({"_id": userID})
 
 
-    for unwantedlink in BotConfig["unwantedlinks"]:
+    for unwantedlink in general_configuration["unwanted_links"]:
         if unwantedlink in message.content:
             await message.delete()
             break
@@ -341,15 +345,15 @@ async def ban(i:discord.Interaction, user: discord.Member, reason: str = None):
 # CODE ENDS HERE!
 
 try:
-    if BotConfig["testingmode"]:
-        bot.owner_id = BotConfig["OwnerID"]
-        bot.command_prefix = BotConfig["CommandPrefix"]
+    if general_configuration["testing_mode"]:
+        bot.owner_id = general_configuration["owner_id"]
+        bot.command_prefix = general_configuration["cmd_prefix"]
         if __name__ == "__main__":
-            bot.run(token=os.getenv("testing"), reconnect=BotConfig["Reconnect"])
-    bot.owner_id = BotConfig["OwnerID"]
-    bot.command_prefix = BotConfig["CommandPrefix"]
+            bot.run(token=os.getenv("testing"))
+    bot.owner_id = general_configuration["owner_id"]
+    bot.command_prefix = general_configuration["cmd_prefix"]
     if __name__ == "__main__":
-        bot.run(token=os.getenv("tkn"), reconnect=BotConfig["Reconnect"])
+        bot.run(token=os.getenv("tkn"))
 
 
 
