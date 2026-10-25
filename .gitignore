@@ -3,3 +3,5 @@ cookies.txt
 Libraries
 downloads
 .vscode
+__pycache__
+Functions/__pycache__

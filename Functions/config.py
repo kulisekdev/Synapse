@@ -12,14 +12,14 @@ def get_config(file: str) -> dict:
             return tomllib.load(f)
     except FileNotFoundError:
 
-        return {"msg": "File not found!", "error": True}
+        return {"msg": f"config file {file} not found!", "error": True}
     except PermissionError:
         
-        return {"msg": f"Permissions denied, check file permissions.", "error": True}
+        return {"msg": f"file access denied, check {file} permissions.", "error": True}
     except TypeError as e:
         return {"msg": str(e), "error": True} 
     except Exception:
-        return {"msg": f"General Exception: {traceback.format_exc()}", "error": True}
+        return {"msg": f"Exception: {traceback.format_exc()}", "error": True}
 
 def set_config(file: str, section: str, name: str, value):
     if not file.endswith(".toml"):

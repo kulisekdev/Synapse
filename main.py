@@ -23,6 +23,24 @@ UsersCollection = SynapseCollections["users"]
 
 #? load bot configuration
 configuration = get_config("config.toml")
+
+if configuration["error"]:
+    WebhookData = {
+        "content": f"Error while running bot. \n ```{configuration['msg']}```",
+        "username":"Synapse Error Handler Webhook"
+    }
+    if "Session is closed" in configuration['msg']:
+        exit(1)
+    print(f"Error while running bot. \n ```{configuration['msg']}```")
+
+    Send_Webhook = requests.post(url=os.getenv("webhook"), json=WebhookData)
+    if Send_Webhook.status_code == 204:
+        print("Sent webhook about error.")
+        exit(1)
+    else:
+        print("Failed to send webhook, very likely discord's fault.")
+        exit(1)
+
 general_configuration = configuration["general"]
 channel_id_configuration = configuration["channels"]
 
@@ -99,7 +117,7 @@ async def on_message(message: discord.Message):
             levelup_embed.set_thumbnail(
                 url=message.author.avatar.url
             )
-            await bot.get_channel(1562077347337998416).send(embed=levelup_embed)
+            await bot.get_channel(channel_id_configuration["level_up_channel"]).send(embed=levelup_embed)
 
         if user["CanReceiveXP"]:
             result = updateVar(
@@ -158,7 +176,7 @@ async def on_member_join(member:discord.Member):
     join_embed.set_footer(
         text=f"ID: {member.id} • Made by Synapse"
     )
-    join_channel = bot.get_channel(1352971409588224030)
+    join_channel = bot.get_channel(channel_id_configuration["join_channel"])
     await join_channel.send(embed=join_embed)
     result = AddUser(member.id, member.name)
     if result["error"]:
@@ -203,8 +221,8 @@ async def on_member_remove(member:discord.Member):
     result = DelUser(member.id)
     if result["error"]:
         sendErr(result["msg"])
-    join_channel = bot.get_channel(1352971409588224030)
-    await join_channel.send(embed=leave_embed)
+    leave_channel = bot.get_channel(channel_id_configuration["leave_channel"])
+    await leave_channel.send(embed=leave_embed)
 
 
 
@@ -317,7 +335,7 @@ async def sendErr(message: str = None):
         timestamp=discord.utils.utcnow(),
     )
     err_embed.set_footer(text="Error report")
-    await bot.get_guild(guild_id).get_channel(1352971422410084382).send(embed=err_embed)
+    await bot.get_guild(guild_id).get_channel(channel_id_configuration["error_channel"]).send(embed=err_embed)
 
 @bot.tree.command(name="ban", description="ban a user (admin)")
 async def ban(i:discord.Interaction, user: discord.Member, reason: str = None):
@@ -338,7 +356,7 @@ async def ban(i:discord.Interaction, user: discord.Member, reason: str = None):
     ban_embed.add_field(name="User", value=f"{user} (`{user.id}`)", inline=False)
     ban_embed.add_field(name="Reason", value=reason, inline=False)
     ban_embed.set_thumbnail(url=user.display_avatar.url)
-    return await user.guild.get_channel(1563897104450191430).send(embed=ban_embed)
+    return await user.guild.get_channel(channel_id_configuration["moderation_channel"]).send(embed=ban_embed)
 
 
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -350,8 +368,8 @@ try:
         bot.command_prefix = general_configuration["cmd_prefix"]
         if __name__ == "__main__":
             bot.run(token=os.getenv("testing"))
-    bot.owner_id = general_configuration["owner_id"]
-    bot.command_prefix = general_configuration["cmd_prefix"]
+        bot.owner_id = general_configuration["owner_id"]
+        bot.command_prefix = general_configuration["cmd_prefix"]
     if __name__ == "__main__":
         bot.run(token=os.getenv("tkn"))
 
