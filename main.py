@@ -115,7 +115,7 @@ async def on_message(message: discord.Message):
 @bot.event
 async def on_ready():
     await bot.tree.sync()
-    await bot.change_presence(status=discord.Status.online, activity=discord.Game("Developed by Kulisek!"))
+    await bot.change_presence(status=discord.Status.online, activity=discord.Game("Developed by LukeDev!"))
     print("Bot is ready!")
 
 
@@ -162,7 +162,7 @@ async def on_member_join(member:discord.Member):
     try:
         await member.send(f"Welcome to the server, {member.mention}! Please make sure to read the rules and enjoy your stay! \n\n If you want to verify yourself, use /verify in <#1502388965259481088> to get access to the rest of the server!")
     except discord.Forbidden:
-        print(f"Couldn't send DM to {member.name} ({member.id})")
+        sendErr(f"Couldn't send DM to {member.name} ({member.id})")
 @bot.event
 async def on_member_remove(member:discord.Member):
     leave_embed = discord.Embed(
@@ -287,8 +287,11 @@ async def question(ctx, *, question: str):
 @bot.tree.command(name="purge", description="purge messages (for admins)")
 async def purge(i:discord.Interaction, amount: int):
     if i.user.id == bot.owner_id:
-        await i.channel.purge(limit=amount + 1)
-        await i.channel.send("Done!")
+        try:
+            await i.channel.purge(limit=amount + 1)
+            await i.channel.send("Done!")
+        except Exception as exc:
+            sendErr(str(exc))
     else:
         await i.response.send_message("you lack permissions!")
 
@@ -311,6 +314,27 @@ async def sendErr(message: str = None):
     )
     err_embed.set_footer(text="Error report")
     await bot.get_guild(guild_id).get_channel(1352971422410084382).send(embed=err_embed)
+
+@bot.tree.command(name="ban", description="ban a user (admin)")
+async def ban(i:discord.Interaction, user: discord.Member, reason: str = None):
+    if not i.user.id == bot.owner_id:
+        return await i.response.send_message("no permission.")
+    if not reason:
+        reason = "no reason specified"
+    if not user:
+        return await i.response.send_message("No user specified")
+
+    await user.ban(reason=reason)
+    ban_embed = discord.Embed(
+        title="User Banned",
+        description=f"{user.mention} has been banned.",
+        color=discord.Color.red(),
+        timestamp=discord.utils.utcnow(),
+    )
+    ban_embed.add_field(name="User", value=f"{user} (`{user.id}`)", inline=False)
+    ban_embed.add_field(name="Reason", value=reason, inline=False)
+    ban_embed.set_thumbnail(url=user.display_avatar.url)
+    return await user.guild.get_channel(1563897104450191430).send(embed=ban_embed)
 
 
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
