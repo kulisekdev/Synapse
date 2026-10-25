@@ -29,8 +29,7 @@ if configuration["error"]:
         "content": f"Error while running bot. \n ```{configuration['msg']}```",
         "username":"Synapse Error Handler Webhook"
     }
-    if "Session is closed" in configuration['msg']:
-        exit(1)
+
     print(f"Error while running bot. \n ```{configuration['msg']}```")
 
     Send_Webhook = requests.post(url=os.getenv("webhook"), json=WebhookData)
@@ -40,6 +39,7 @@ if configuration["error"]:
     else:
         print("Failed to send webhook, very likely discord's fault.")
         exit(1)
+    exit(1)
 
 general_configuration = configuration["general"]
 channel_id_configuration = configuration["channels"]
