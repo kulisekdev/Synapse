@@ -54,7 +54,7 @@ cd Synapse
 
 ### 2. Install dependencies
 
-Install the packages used by the project:
+Install the packages used by the project we recommend having a python enviroment.:
 
 ```bash
 pip install discord.py pymongo python-dotenv requests
@@ -64,7 +64,7 @@ Voice playback may also require an appropriate FFmpeg installation and voice dep
 
 ### 3. Configure environment variables
 
-Create a local `.env` file in the project root. **Never commit this file or share its contents.**
+Create a local `.env` file in the project root. testing is optional, can be another discord bot token not explicitly for testing purposes **Never commit this file or share its contents.**
 
 ```env
 mongodb=your_mongodb_connection_string
