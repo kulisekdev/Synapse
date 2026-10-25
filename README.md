@@ -10,7 +10,7 @@
 [![discord.py](https://img.shields.io/badge/discord.py-bot-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discordpy.readthedocs.io/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-database-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
 
-[**📦 View Repository**](https://github.com/kulisekdev/Synapse) · [**🐛 Report a Bug**](https://github.com/kulisekdev/Synapse/issues) · [**✨ Request a Feature**](https://github.com/kulisekdev/Synapse/issues)
+[**📦 View Repository**](https://github.com/kulisekdev/Synapse) · [**🐛 Report a Bug**](https://discord.com/channels/1345844941397557270/1563908181040824462) · [**✨ Request a Feature**](https://discord.gg/8A9epxs3qp)
 
 </div>
 
