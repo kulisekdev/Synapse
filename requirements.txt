@@ -1,0 +1,5 @@
+discord
+pymongo
+python-dotenv
+tomli_w
+requests

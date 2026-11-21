@@ -20,6 +20,7 @@ load_dotenv()
 DBClient = MongoClient(os.getenv("mongodb"), serverSelectionTimeoutMS=500)
 SynapseCollections = DBClient["Synapse"]
 UsersCollection = SynapseCollections["users"]
+DocasneNicks = SynapseCollections["DocasneNicks"]
 
 #? load bot configuration
 configuration = get_config("config.toml")
@@ -127,8 +128,10 @@ async def on_message(message: discord.Message):
                 var_name="xp",
                 value=10
             )
-            if result["error"]:
+            if result and result.get("error"):
                 await sendErr(result["msg"])
+
+                
 
     await bot.process_commands(message)
 
@@ -138,6 +141,7 @@ async def on_message(message: discord.Message):
 async def on_ready():
     await bot.tree.sync()
     await bot.change_presence(status=discord.Status.online, activity=discord.Game("Developed by LukeDev!"))
+    await nickttimeloop.start()
     print("Bot is ready!")
 
 
@@ -327,7 +331,18 @@ async def flashdance(ctx: Context):
     await ctx.voice_client.disconnect()
 
 async def sendErr(message: str = None):
-    guild_id = 1345844941397557270
+    guild_id = 1352971422410084382
+    err_embed = discord.Embed(
+        title="⚠️ Error",
+        description=(f"**{message}**"),
+        color=discord.Color.red(),
+        timestamp=discord.utils.utcnow(),
+    )
+    err_embed.set_footer(text="Error report")
+    await bot.get_guild(guild_id).get_channel(channel_id_configuration["error_channel"]).send(embed=err_embed)
+
+async def sendCMDErr(message: str = None):
+    guild_id = 1352971422410084382
     err_embed = discord.Embed(
         title="⚠️ Error",
         description=(f"**{message}**"),
@@ -359,6 +374,38 @@ async def ban(i:discord.Interaction, user: discord.Member, reason: str = None):
     return await user.guild.get_channel(channel_id_configuration["moderation_channel"]).send(embed=ban_embed)
 
 
+@bot.tree.command(name="tempnick", description="set a temporary nickname for an user")
+async def docasnenicks(i: discord.Interaction, user:discord.Member, nick: str):
+    user_entry = UsersCollection.find_one({"_id": user.id})
+    tempnick_entry = DocasneNicks.find_one({"_id": user.id})
+    if user_entry:
+        if not tempnick_entry:
+            DocasneNicks.insert_one({
+                "_id": user.id,
+                "appliedby": i.user.id,
+                "nickname": nick,
+                "time": 600
+            })
+            try:
+                await user.edit(nick=nick)
+            except PermissionError:
+                await sendCMDErr(f"I don't have the permissions to edit <@{user.id}>'s username in this guild! Command used by: {i.user.mention}, Owner: <@{bot.owner_id}>")
+            return await i.response.send_message(f"the user <@{user.id}> will have the nickname '**{nick}**' for 10 mins!")
+        else:
+            return await i.response.send_message("This user already has a temporary nickname!")
+    else:
+        return await i.response.send_message("Try again you weren't in my database of users but now you should be")
+
+@tasks.loop(seconds=10)
+async def nickttimeloop():
+    for entry in DocasneNicks.find():
+        if entry["time"] < 0:
+            await bot.get_guild(1345844941397557270).get_member(entry["_id"]).edit(nick=None)
+        DocasneNicks.update_one({"_id": entry["_id"]}, {"$inc": {"time": -10}})
+
+@bot.command()
+async def testnick(ctx: commands.Context):
+    await ctx.guild.get_member(1184211987643773011).edit(nick="test")
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # CODE ENDS HERE!
 
