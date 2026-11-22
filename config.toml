@@ -24,6 +24,7 @@ unwanted_links = [
   "rule34.xxx",
   "rule34videos.com",
 ]
+enable_stats_website = false
 guild_id = 1345844941397557270 # my server Kulisek Community | reference for the guild bot is in
 # allow users to utilize @everyone mention? default: false
 allow_everyone_mention = false
