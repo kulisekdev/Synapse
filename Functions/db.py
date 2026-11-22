@@ -37,24 +37,24 @@ def updateVar(collection: Collection, _id: int, operation: Literal["set", "add",
     elif operation == "ded":
         MongoDB_Operator = "$inc"
         value = -abs(value)
-        if User: 
-            if type(value) == type(collection.find_one({"_id": _id})):
-                try:
-                    print(MongoDB_Operator)
-                    UsersDB.update_one(
-                        {"_id": _id},
-                        {MongoDB_Operator: {
-                            var_name: value
-                            }
+    if User: 
+        if type(value) == type(User[f"{var_name}"]):
+            try:
+                print(MongoDB_Operator)
+                UsersDB.update_one(
+                    {"_id": _id},
+                    {MongoDB_Operator: {
+                        var_name: value
                         }
-                    )
-                    return {"error": False, "msg": "Success!"}
-                except PyMongoError as exc:
-                    return {"error": True, "msg": f"{str(exc)}"}
-            else:
-                return {"error": True, "msg": f"variable xp is {type(User['xp'])}, supposed to be int"}
+                    }
+                )
+                return {"error": False, "msg": "Success!"}
+            except PyMongoError as exc:
+                return {"error": True, "msg": f"{str(exc)}"}
         else:
-            return {"error": True, "msg": f"isn't in database."}
+            return {"error": True, "msg": f"variable {var_name} is {type(var_name)}, supposed to be  {type(User[f'{var_name}'])}"}
+    else:
+        return {"error": True, "msg": f"user isn't in database."}
 
 def AddUser(userID: int,username: str):
     """
@@ -69,9 +69,11 @@ def AddUser(userID: int,username: str):
         try:
             UsersDB.insert_one({
                 "_id": userID,
+                "username": username,
                 "level": 1,
                 "CanReceiveXP": True,
                 "warnings": 0,
+                "xp": 0
             }
             )
             return {"error": False, "msg": "Success!"}

@@ -10,7 +10,7 @@ from pymongo import MongoClient
 from dotenv import load_dotenv
 import random
 from asyncio import sleep
-from dataclasses import dataclass
+
 from Functions.db import updateVar, AddUser, DelUser
 from Functions.config import set_config, get_config
 from discord.ext.commands import Context
@@ -69,19 +69,18 @@ async def on_message(message: discord.Message):
         
 
     
-    userID = int(message.author.id)
+    userID = message.author.id
     user = UsersCollection.find_one({"_id": userID})
 
+    if not user:
+        result = AddUser(message.author.id, message.author.name)
+        if result and result.get("error"):
+            await sendErr(result.get("msg"))
 
     for unwantedlink in general_configuration["unwanted_links"]:
         if unwantedlink in message.content:
             await message.delete()
             break
-
-    if not user:
-        result = AddUser(message.author.id, message.author.name)
-        if result and result.get("error"):
-            sendErr(result.get("error"))
         
     level_roles = {
         "ten": {"id": 1502276813089673466, "lvl": 10},
@@ -188,11 +187,11 @@ async def on_member_join(member:discord.Member):
     await join_channel.send(embed=join_embed)
     result = AddUser(member.id, member.name)
     if result and result.get("error"):
-        sendErr(result["message"])
+        await sendErr(result["msg"])
     try:
         await member.send(f"Welcome to the server, {member.mention}! Please make sure to read the rules and enjoy your stay! \n\n If you want to verify yourself, use /verify in <#1502388965259481088> to get access to the rest of the server!")
     except discord.Forbidden:
-        sendErr(f"Couldn't send DM to {member.name} ({member.id})")
+        await sendErr(f"Couldn't send DM to {member.name} ({member.id})")
 @bot.event
 async def on_member_remove(member:discord.Member):
     leave_embed = discord.Embed(
@@ -228,7 +227,7 @@ async def on_member_remove(member:discord.Member):
     )
     result = DelUser(member.id)
     if result and result.get("error"):
-        sendErr(result["msg"])
+        await sendErr(result["msg"])
     leave_channel = bot.get_channel(channel_id_configuration["leave_channel"])
     await leave_channel.send(embed=leave_embed)
 
@@ -321,7 +320,7 @@ async def purge(i:discord.Interaction, amount: int):
             await i.channel.purge(limit=amount + 1)
             await i.channel.send("Done!")
         except Exception as exc:
-            sendErr(str(exc))
+            await sendErr(str(exc))
     else:
         await i.response.send_message("you lack permissions!")
 
@@ -335,7 +334,7 @@ async def flashdance(ctx: Context):
     await ctx.voice_client.disconnect()
 
 async def sendErr(message: str = None):
-    guild_id = 1352971422410084382
+    guild_id = 1345844941397557270
     err_embed = discord.Embed(
         title="⚠️ Error",
         description=(f"**{message}**"),
@@ -343,10 +342,10 @@ async def sendErr(message: str = None):
         timestamp=discord.utils.utcnow(),
     )
     err_embed.set_footer(text="Error report")
-    await bot.get_guild(guild_id).get_channel(channel_id_configuration["error_channel"]).send(embed=err_embed)
+    await bot.get_guild(general_configuration["guild_id"]).get_channel(channel_id_configuration["error_channel"]).send(embed=err_embed)
 
 async def sendCMDErr(message: str = None):
-    guild_id = 1352971422410084382
+    guild_id = 1345844941397557270
     err_embed = discord.Embed(
         title="⚠️ Error",
         description=(f"**{message}**"),
@@ -354,7 +353,7 @@ async def sendCMDErr(message: str = None):
         timestamp=discord.utils.utcnow(),
     )
     err_embed.set_footer(text="Error report")
-    await bot.get_guild(guild_id).get_channel(channel_id_configuration["error_channel"]).send(embed=err_embed)
+    await bot.get_guild(general_configuration["guild_id"]).get_channel(channel_id_configuration["error_channel"]).send(embed=err_embed)
 
 @bot.tree.command(name="ban", description="ban a user (admin)")
 async def ban(i:discord.Interaction, user: discord.Member, reason: str = None):
@@ -404,7 +403,7 @@ async def docasnenicks(i: discord.Interaction, user:discord.Member, nick: str):
 async def nickttimeloop():
     for entry in DocasneNicks.find():
         if entry["time"] < 0:
-            await bot.get_guild(1345844941397557270).get_member(entry["_id"]).edit(nick=None)
+            await bot.get_guild(general_configuration["guild_id"]).get_member(entry["_id"]).edit(nick=None)
             DocasneNicks.delete_one({"_id": entry["_id"]})
         DocasneNicks.update_one({"_id": entry["_id"]}, {"$inc": {"time": -10}})
 
