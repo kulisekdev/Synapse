@@ -11,7 +11,7 @@ owner_id = 948646639961255936
 # Select which bot token to use from .env.
 # true  = testing token (uses testing var from .env)
 # false = production token (uses tkn var from .env)
-testing_mode = true
+testing_mode = false
 
 # Text patterns blocked by the link filter.
 # Messages containing any of these strings may be removed.

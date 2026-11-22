@@ -78,7 +78,11 @@ async def on_message(message: discord.Message):
             await message.delete()
             break
 
-
+    if not user:
+        result = AddUser(message.author.id, message.author.name)
+        if result and result.get("error"):
+            sendErr(result.get("error"))
+        
     level_roles = {
         "ten": {"id": 1502276813089673466, "lvl": 10},
         "twenty": {"id": 1502276813089673466, "lvl": 20},
@@ -183,7 +187,7 @@ async def on_member_join(member:discord.Member):
     join_channel = bot.get_channel(channel_id_configuration["join_channel"])
     await join_channel.send(embed=join_embed)
     result = AddUser(member.id, member.name)
-    if result["error"]:
+    if result and result.get("error"):
         sendErr(result["message"])
     try:
         await member.send(f"Welcome to the server, {member.mention}! Please make sure to read the rules and enjoy your stay! \n\n If you want to verify yourself, use /verify in <#1502388965259481088> to get access to the rest of the server!")
@@ -223,7 +227,7 @@ async def on_member_remove(member:discord.Member):
         text=f"ID: {member.id} • Made by Synapse"
     )
     result = DelUser(member.id)
-    if result["error"]:
+    if result and result.get("error"):
         sendErr(result["msg"])
     leave_channel = bot.get_channel(channel_id_configuration["leave_channel"])
     await leave_channel.send(embed=leave_embed)
@@ -401,11 +405,19 @@ async def nickttimeloop():
     for entry in DocasneNicks.find():
         if entry["time"] < 0:
             await bot.get_guild(1345844941397557270).get_member(entry["_id"]).edit(nick=None)
+            DocasneNicks.delete_one({"_id": entry["_id"]})
         DocasneNicks.update_one({"_id": entry["_id"]}, {"$inc": {"time": -10}})
 
-@bot.command()
-async def testnick(ctx: commands.Context):
-    await ctx.guild.get_member(1184211987643773011).edit(nick="test")
+@bot.tree.command(name="nicktimer", description="check your tempnick timer of expiry")
+async def nick_timer(i:discord.Interaction):
+    entry = DocasneNicks.find_one({"_id": i.user.id})
+    if entry:
+        return await i.response.send_message(f"{entry["timer"] / 60} minutes left!")
+    else:
+        return await i.response.send_message("You don't have a temp nickname!")
+
+
+        
 #------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # CODE ENDS HERE!
 
