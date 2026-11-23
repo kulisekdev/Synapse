@@ -6,21 +6,42 @@ import traceback
 import json
 import requests
 import time
+from flask import render_template, Flask
 from pymongo import MongoClient
 from dotenv import load_dotenv
+import threading
 import random
 from asyncio import sleep
-
 from Functions.db import updateVar, AddUser, DelUser
 from Functions.config import set_config, get_config
 from discord.ext.commands import Context
 load_dotenv()
+
+WebServer = Flask(import_name=__name__, template_folder="Pages")
 
 
 DBClient = MongoClient(os.getenv("mongodb"), serverSelectionTimeoutMS=500)
 SynapseCollections = DBClient["Synapse"]
 UsersCollection = SynapseCollections["users"]
 DocasneNicks = SynapseCollections["DocasneNicks"]
+
+# Web server
+
+@WebServer.route("/")
+def index():
+    try:
+        return render_template("index.html", userinfo = UsersCollection.find({}).to_list())
+    except Exception:
+        return render_template("index.html", userinfo = "error")
+def runWebServer():
+    WebServer.run(host="0.0.0.0", port=1111, debug=False)
+
+WebServerThread = threading.Thread(target=runWebServer, daemon=True)
+
+
+
+# -------------------------------------------------------------------------------------------------------------------------------------------------------------
+# WEB SERVER ENDS HERE
 
 #? load bot configuration
 configuration = get_config("config.toml")
@@ -144,9 +165,12 @@ async def on_message(message: discord.Message):
 async def on_ready():
     await bot.tree.sync()
     await bot.change_presence(status=discord.Status.online, activity=discord.Game("Developed by LukeDev!"))
-    await nickttimeloop.start()
-    print("Bot is ready!")
 
+    if general_configuration["enable_stats_website"] is True:
+        print("starting web server")
+        WebServerThread.start()    
+    print("Bot is ready!")
+    await nickttimeloop.start()
 
 
 

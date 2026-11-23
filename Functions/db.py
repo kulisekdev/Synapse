@@ -69,13 +69,12 @@ def AddUser(userID: int,username: str):
         try:
             UsersDB.insert_one({
                 "_id": userID,
-                "username": username,
+                "name": username,
                 "level": 1,
                 "CanReceiveXP": True,
                 "warnings": 0,
                 "xp": 0
-            }
-            )
+            })
             return {"error": False, "msg": "Success!"}
         except PyMongoError as exc:
             return {"error": True, "msg": f"{str(exc)}"}

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Synapse Database Website</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome Icons CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        discord: {
+                            blurple: '#5865F2',
+                            dark: '#1e1f22',
+                            darker: '#111214',
+                            card: '#2b2d31',
+                            hover: '#313338'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-discord-darker text-gray-100 min-h-screen flex flex-col justify-between antialiased selection:bg-discord-blurple selection:text-white">
+
+    <!-- Top Navigation / Header -->
+    <header class="bg-discord-dark/80 backdrop-blur-md border-b border-gray-800 sticky top-0 z-10">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="bg-discord-blurple/20 border border-discord-blurple/50 p-2.5 rounded-xl text-discord-blurple">
+                    <i class="fa-solid fa-shield-halved text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-white">
+                        Server Guardian <span class="text-discord-blurple">Stats</span>
+                    </h1>
+                    <div class="flex items-center space-x-2 text-xs text-gray-400">
+                        <span class="relative flex h-2 w-2">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                        </span>
+                        <span>Live Sync (5s)</span>
+                    </div>
+                </div>
+            </div>
+
+            <a href="https://discord.gg/8A9epxs3qp" target="_blank" rel="noopener noreferrer" 
+               class="inline-flex items-center gap-2 bg-discord-blurple hover:bg-indigo-600 text-white font-medium px-4 py-2 rounded-lg transition-all duration-200 shadow-lg shadow-discord-blurple/20 hover:shadow-discord-blurple/40 text-sm">
+                <i class="fa-brands fa-discord text-lg"></i>
+                <span>Kulisek Community Discord</span>
+                <i class="fa-solid fa-arrow-up-right-from-square text-xs opacity-75"></i>
+            </a>
+        </div>
+    </header>
+
+    <!-- Main Content: Leaderboard / User Grid -->
+    <main class="max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-grow">
+        <div class="mb-6 flex items-center justify-between">
+            <h2 class="text-lg font-semibold text-gray-300 flex items-center gap-2">
+                <i class="fa-solid fa-users text-discord-blurple"></i>
+                <span>Community Members</span>
+            </h2>
+            <span class="text-xs font-mono bg-discord-card px-3 py-1 rounded-full text-gray-400 border border-gray-700">
+                <i class="fa-solid fa-database mr-1 text-emerald-400"></i> Synapse DB
+            </span>
+        </div>
+
+        <!-- User Cards Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for i in userinfo %}
+            <div class="group bg-discord-card hover:bg-discord-hover border border-gray-800 hover:border-discord-blurple/50 rounded-2xl p-6 transition-all duration-300 shadow-md hover:shadow-xl hover:-translate-y-1">
+                
+                <!-- Card Header: Avatar & Username -->
+                <div class="flex items-center space-x-4 mb-5">
+                    <div class="relative">
+                        <div class="w-12 h-12 rounded-full bg-gradient-to-tr from-discord-blurple to-purple-500 flex items-center justify-center text-white font-bold text-lg shadow-inner">
+                            <i class="fa-solid fa-user-astronaut"></i>
+                        </div>
+                        <span class="absolute -bottom-1 -right-1 bg-discord-dark text-yellow-400 text-xs px-1.5 py-0.5 rounded-md border border-gray-700 font-mono font-bold">
+                            #{{ loop.index }}
+                        </span>
+                    </div>
+                    <div class="overflow-hidden">
+                        <h3 class="text-lg font-bold text-white truncate group-hover:text-discord-blurple transition-colors">
+                            {{ i.username }}
+                        </h3>
+                        <p class="text-xs text-gray-400 flex items-center gap-1">
+                            <i class="fa-solid fa-circle-check text-emerald-500 text-[10px]"></i> Active Member
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Stats Boxes -->
+                <div class="grid grid-cols-2 gap-3 pt-4 border-t border-gray-700/60">
+                    <!-- Level Box -->
+                    <div class="bg-discord-dark/70 rounded-xl p-3 border border-gray-800/80">
+                        <div class="flex items-center gap-1.5 text-xs text-gray-400 mb-1">
+                            <i class="fa-solid fa-trophy text-amber-400"></i>
+                            <span>LEVEL</span>
+                        </div>
+                        <p class="text-xl font-bold font-mono text-white">
+                            {{ i.level }}
+                        </p>
+                    </div>
+
+                    <!-- XP Box -->
+                    <div class="bg-discord-dark/70 rounded-xl p-3 border border-gray-800/80">
+                        <div class="flex items-center gap-1.5 text-xs text-gray-400 mb-1">
+                            <i class="fa-solid fa-bolt text-cyan-400"></i>
+                            <span>TOTAL XP</span>
+                        </div>
+                        <p class="text-xl font-bold font-mono text-white">
+                            {{ i.xp }}
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+            {% endfor %}
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-discord-dark border-t border-gray-800 mt-12">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-gray-400">
+            <p class="flex items-center gap-2">
+                <i class="fa-solid fa-code text-discord-blurple"></i>
+                <span>Developed by <strong class="text-gray-200">LukeDev</strong> / <strong class="text-gray-200">kulisekDev</strong></span>
+            </p>
+            <a href="https://github.com/kulisakdev" target="_blank" rel="noopener noreferrer" 
+               class="inline-flex items-center gap-2 text-gray-300 hover:text-white bg-discord-card hover:bg-gray-700 px-3.5 py-1.5 rounded-lg border border-gray-700 transition-colors">
+                <i class="fa-brands fa-github text-base"></i>
+                <span>GitHub</span>
+            </a>
+        </div>
+    </footer>
+
+    <!-- Auto-Refresh Script -->
+    <script>
+        setInterval(() => {
+            window.location.reload();
+        }, 5000);
+    </script>
+</body>
+</html>

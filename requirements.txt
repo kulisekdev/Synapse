@@ -3,3 +3,4 @@ pymongo
 python-dotenv
 tomli_w
 requests
+flask

@@ -11,7 +11,7 @@ owner_id = 948646639961255936
 # Select which bot token to use from .env.
 # true  = testing token (uses testing var from .env)
 # false = production token (uses tkn var from .env)
-testing_mode = false
+testing_mode = true
 
 # Text patterns blocked by the link filter.
 # Messages containing any of these strings may be removed.
@@ -24,7 +24,7 @@ unwanted_links = [
   "rule34.xxx",
   "rule34videos.com",
 ]
-enable_stats_website = false
+enable_stats_website = true
 guild_id = 1345844941397557270 # my server Kulisek Community | reference for the guild bot is in
 # allow users to utilize @everyone mention? default: false
 allow_everyone_mention = false
